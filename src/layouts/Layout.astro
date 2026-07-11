@@ -1,0 +1,73 @@
+---
+const { title } = Astro.props;
+---
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+		<title>{title ? `${title} \u2014 Best Missoula` : "Best Missoula \u2014 Western Montana's Local Guide"}</title>
+	</head>
+	<body>
+		<header>
+			<a href="/" class="wordmark">Best Missoula</a>
+			<nav>
+				<a href="/eat/">Eat</a>
+				<a href="/stay/">Stay</a>
+				<a href="/do/">Do</a>
+				<a href="/outdoors/" class="nav-outdoors">Outdoors</a>
+			</nav>
+		</header>
+		<slot />
+		<footer>
+			<p>&copy; {new Date().getFullYear()} Best Missoula &mdash; Western Montana's local guide.</p>
+		</footer>
+	</body>
+</html>
+
+<style>
+	:global(body) {
+		margin: 0;
+		font-family: 'Inter', sans-serif;
+		color: #2b2b28;
+		background: #faf8f4;
+	}
+
+	h1, h2, h3 {
+		font-family: 'Fraunces', serif;
+	}
+
+	header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 1rem 2rem;
+		background: #2f4538;
+	}
+
+	.wordmark {
+		font-family: 'Fraunces', serif;
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: #faf8f4;
+		text-decoration: none;
+	}
+
+	nav a {
+		color: #faf8f4;
+		text-decoration: none;
+		margin-left: 1.5rem;
+		font-weight: 500;
+	}
+
+	.nav-outdoors {
+		font-weight: 600;
+		border-bottom: 2px solid #faf8f4;
+		padding-bottom: 2px;
+	}
+</style>
+</html>
