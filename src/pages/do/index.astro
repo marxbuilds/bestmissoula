@@ -1,2 +1,10 @@
-<h1>Do</h1>
-<p>Coming soon.</p>
+---
+import Layout from '../../layouts/Layout.astro';
+
+const title = "Do";
+---
+
+<Layout title={title} noindex={true}>
+  <h1>{title}</h1>
+  <p>Coming soon.</p>
+</Layout>
