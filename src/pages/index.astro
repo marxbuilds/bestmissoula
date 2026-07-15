@@ -15,11 +15,17 @@ import Layout from '../layouts/Layout.astro';
   </p>
 
   <p>
-    This site is here to help you find the best of what Missoula and
-    the surrounding valleys have to offer, all in one place. We're
-    just getting started — right now that means the best guided
-    fishing in the area — but more is coming soon.
+    Looking for a fishing guide near Missoula? Start here. We've built
+    a real comparison tool covering guided fishing outfitters across
+    the region — filter by water, fishing type, region, and price to
+    find the right trip, plus straightforward guides on how to pick a
+    guide and the best time of year to go.
   </p>
+
+  <div class="cta-row">
+    <a href="/outdoors/fishing/" class="btn btn-primary">Explore fishing guides</a>
+    <a href="/outdoors/fishing/compare-outfitters/" class="btn btn-secondary">Compare outfitters</a>
+  </div>
 
   <p>
     <a href="/eat/">Eat</a> ·
@@ -28,3 +34,23 @@ import Layout from '../layouts/Layout.astro';
     <a href="/outdoors/" class="nav-outdoors">Outdoors →</a>
   </p>
 </Layout>
+
+<style>
+  .cta-row {
+    display: flex;
+    gap: 1rem;
+    margin: 1.5rem 0 2rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 600;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    background: #2f4538;
+    color: #faf8f4;
+  }
+</style>

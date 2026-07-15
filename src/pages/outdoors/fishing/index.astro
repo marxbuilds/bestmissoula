@@ -69,11 +69,52 @@ const title = "Guided Fishing Near Missoula";
 
   <section>
     <h2>Waters Near Missoula</h2>
-    <p><em>Water-by-water guides coming soon.</em></p>
+    <p>
+      Detailed water-by-water guides are in progress. Here's what's
+      planned:
+    </p>
+    <div class="water-list">
+      <div class="water-card">Blackfoot River</div>
+      <div class="water-card">Bitterroot River</div>
+      <div class="water-card">Clark Fork River</div>
+      <div class="water-card">Rock Creek</div>
+      <div class="water-card">Flathead Lake</div>
+    </div>
   </section>
 
   <section>
     <h2>Compare Local Outfitters</h2>
-    <p><em>Outfitter comparison table coming soon.</em></p>
+    <p>
+      See all local fishing outfitters side by side — filter by water,
+      fishing type, region, and price to find the right guide for
+      your trip.
+    </p>
+    <a href="/outdoors/fishing/compare-outfitters/" class="btn">Compare outfitters →</a>
   </section>
 </Layout>
+<style>
+  .btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 600;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    background: #2f4538;
+    color: #faf8f4;
+  }
+  .water-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .water-card {
+    background: #eee8dc;
+    border: 1px solid #d8d0bd;
+    border-radius: 6px;
+    padding: 0.6rem 1.1rem;
+    font-weight: 500;
+  }
+</style>
