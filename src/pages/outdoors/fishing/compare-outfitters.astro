@@ -1,15 +1,342 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
 
-const title = "Compare Local Outfitters";
+const outfitters = await getCollection('outfitters');
+
+// Build the filter option lists FROM the data, not hardcoded —
+// so a new region/water/type added later shows up automatically.
+const regions = [...new Set(outfitters.map((o) => o.data.region))].sort();
+const waters = [...new Set(outfitters.flatMap((o) => o.data.waters))].sort();
+const fishingTypes = [...new Set(outfitters.flatMap((o) => o.data.fishingType))].sort();
+const priceTiers = [...new Set(outfitters.map((o) => o.data.priceTier))].sort();
+
+// Sort the cards themselves alphabetically by name for a stable, predictable order.
+const sortedOutfitters = [...outfitters].sort((a, b) => a.data.name.localeCompare(b.data.name));
 ---
+<Layout title="Compare Fishing Outfitters">
+  <main class="compare-page">
+    <p class="eyebrow">Missoula &amp; Western Montana</p>
+    <h1>Compare Fishing Outfitters</h1>
+    <p class="intro">Filter by region, water, fishing type, or price to find the right guide for your trip.</p>
 
-<Layout title={title} noindex={true}>
-  <h1>{title}</h1>
-  <p>
-    Our full outfitter comparison table is coming soon. In the
-    meantime, head back to the
-    <a href="/outdoors/fishing/">fishing hub</a> for more on planning
-    your trip.
-  </p>
+    <div class="layout-grid">
+      <aside class="filters" aria-label="Filter outfitters">
+        <div class="filter-group">
+          <h2>Region</h2>
+          {regions.map((r) => (
+            <label class="filter-option">
+              <input type="checkbox" data-group="region" data-value={r} />
+              {r}
+            </label>
+          ))}
+        </div>
+
+        <div class="filter-group">
+          <h2>Water</h2>
+          {waters.map((w) => (
+            <label class="filter-option">
+              <input type="checkbox" data-group="water" data-value={w} />
+              {w}
+            </label>
+          ))}
+        </div>
+
+        <div class="filter-group">
+          <h2>Fishing Type</h2>
+          {fishingTypes.map((f) => (
+            <label class="filter-option">
+              <input type="checkbox" data-group="fishingType" data-value={f} />
+              {f}
+            </label>
+          ))}
+        </div>
+
+        <div class="filter-group">
+          <h2>Price</h2>
+          {priceTiers.map((p) => (
+            <label class="filter-option">
+              <input type="checkbox" data-group="priceTier" data-value={p} />
+              {p}
+            </label>
+          ))}
+        </div>
+
+        <button type="button" id="reset-filters" class="reset-btn">Reset filters</button>
+      </aside>
+
+      <div class="grid-col">
+        <p id="result-count" class="result-count"></p>
+
+        <div class="card-grid" id="card-grid">
+          {sortedOutfitters.map((entry) => (
+            
+              <a
+              href={`/outdoors/fishing/outfitters/${entry.id}/`}
+              class="card"
+              data-region={entry.data.region}
+              data-waters={entry.data.waters.join('|')}
+              data-fishingtype={entry.data.fishingType.join('|')}
+              data-pricetier={entry.data.priceTier}
+            >
+              <div class="card-photo">
+                <img src="/fish-placeholder.png" alt="" class="card-icon" />
+              </div>
+              <div class="card-body">
+                <p class="card-eyebrow">{entry.data.baseTown}, {entry.data.region}</p>
+                <h3>{entry.data.name}</h3>
+                <p class="card-price">{entry.data.priceDisplay}</p>
+                <div class="card-pills">
+                  {entry.data.waters.slice(0, 2).map((w) => <span class="pill">{w}</span>)}
+                </div>
+                <span class="view-link">View details &rarr;</span>
+              </div>
+            </a>
+          ))}
+        </div>
+
+        <p id="no-results" class="no-results" hidden>No outfitters match those filters. Try removing one.</p>
+      </div>
+    </div>
+  </main>
 </Layout>
+
+<script>
+  const grid = document.getElementById('card-grid') as HTMLElement;
+  const cards = Array.from(grid.querySelectorAll<HTMLAnchorElement>('.card'));
+  const checkboxes = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'));
+  const resultCount = document.getElementById('result-count') as HTMLElement;
+  const noResults = document.getElementById('no-results') as HTMLElement;
+  const resetBtn = document.getElementById('reset-filters') as HTMLButtonElement;
+
+  function getCheckedByGroup(): Record<string, string[]> {
+    const byGroup: Record<string, string[]> = {};
+    checkboxes.forEach((cb) => {
+      if (cb.checked) {
+        const group = cb.dataset.group as string;
+        if (!byGroup[group]) byGroup[group] = [];
+        byGroup[group].push(cb.dataset.value as string);
+      }
+    });
+    return byGroup;
+  }
+
+  function cardMatches(card: HTMLElement, byGroup: Record<string, string[]>): boolean {
+    return Object.entries(byGroup).every(([group, values]) => {
+      const cardValues: string[] =
+        group === 'water'
+          ? (card.dataset.waters || '').split('|')
+          : group === 'fishingType'
+          ? (card.dataset.fishingtype || '').split('|')
+          : group === 'region'
+          ? [card.dataset.region || '']
+          : [card.dataset.pricetier || ''];
+      return values.some((v: string) => cardValues.includes(v));
+    });
+  }
+
+  function applyFilters(): void {
+    const byGroup = getCheckedByGroup();
+    let visibleCount = 0;
+
+    cards.forEach((card) => {
+      const matches = Object.keys(byGroup).length === 0 || cardMatches(card, byGroup);
+      card.style.display = matches ? '' : 'none';
+      if (matches) visibleCount++;
+    });
+
+    resultCount.textContent = `Showing ${visibleCount} of ${cards.length} outfitters`;
+    noResults.hidden = visibleCount !== 0;
+  }
+
+  checkboxes.forEach((cb) => cb.addEventListener('change', applyFilters));
+
+  resetBtn.addEventListener('click', () => {
+    checkboxes.forEach((cb) => (cb.checked = false));
+    applyFilters();
+  });
+
+  applyFilters();
+</script>
+
+<style>
+  .compare-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #4a6670;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+  }
+
+  h1 {
+    margin: 0 0 0.5rem 0;
+  }
+
+  .intro {
+    margin: 0 0 2rem 0;
+    color: #4a4438;
+  }
+
+  .layout-grid {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .filters {
+    position: sticky;
+    top: 1.5rem;
+  }
+
+  .filter-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .filter-group h2 {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6b6558;
+    font-weight: 600;
+    margin: 0 0 0.6rem 0;
+  }
+
+  .filter-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+    cursor: pointer;
+  }
+
+  .reset-btn {
+    background: none;
+    border: 1px solid #4a6670;
+    color: #4a6670;
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .reset-btn:hover {
+    background: #4a6670;
+    color: #faf8f4;
+  }
+
+  .result-count {
+    font-size: 0.9rem;
+    color: #6b6558;
+    margin: 0 0 1rem 0;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .card {
+    display: block;
+    background: #fff;
+    border: 1px solid #e5e1d6;
+    border-radius: 8px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.15s ease;
+  }
+
+  .card:hover {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  }
+
+  .card-photo {
+    aspect-ratio: 16 / 9;
+    background: #e8e4da;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-icon {
+    width: 25%;
+    max-width: 70px;
+    opacity: 0.85;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .card-eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #4a6670;
+    font-weight: 600;
+    margin: 0 0 0.2rem 0;
+  }
+
+  .card-body h3 {
+    margin: 0 0 0.3rem 0;
+    font-size: 1.1rem;
+  }
+
+  .card-price {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    margin: 0 0 0.6rem 0;
+  }
+
+  .card-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .pill {
+    background: #eef2f0;
+    color: #4a6670;
+    border: 1px solid #cdd9d6;
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .view-link {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #2f4538;
+  }
+
+  .no-results {
+    color: #6b6558;
+    font-style: italic;
+  }
+
+  @media (max-width: 700px) {
+    .layout-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .filters {
+      position: static;
+    }
+  }
+</style>
