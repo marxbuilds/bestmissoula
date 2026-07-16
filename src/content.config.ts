@@ -23,6 +23,27 @@ const outfitters = defineCollection({
   }),
 });
 
+const properties = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/properties' }),
+  schema: z.object({
+    name: z.string(),
+    town: z.string(),
+    region: z.string(),
+    propertyType: z.string(),
+    priceTier: z.enum(['$', '$$', '$$$', '$$$$']),
+    priceDisplay: z.string(),
+    amenities: z.array(z.string()),
+    roomTypes: z.string().optional(),
+    phone: z.string().optional(),
+    website: z.string().optional(),
+    affiliateUrl: z.string().optional(),
+    description: z.string(),
+    photo: z.string().optional(),
+    verified: z.boolean(),
+  }),
+});
+
 export const collections = {
   outfitters,
+  properties,
 };

@@ -1,0 +1,50 @@
+---
+// src/components/CheckAvailability.astro
+interface Props {
+  propertyName: string;
+  website: string;
+  affiliateUrl?: string;
+}
+
+const { propertyName, website, affiliateUrl } = Astro.props;
+
+const isAffiliate = Boolean(affiliateUrl);
+const href = isAffiliate ? affiliateUrl : website;
+const rel = isAffiliate ? "sponsored noopener" : "noopener";
+const label = isAffiliate ? "Check rates on Booking.com" : "Visit property website";
+---
+
+<div class="check-availability">
+  
+    href={href}
+    target="_blank"
+    rel={rel}
+    class="btn availability-btn"
+    aria-label={`${label} — ${propertyName}`}
+  >
+    {label}
+  </a>
+
+  {isAffiliate && (
+    <p class="ftc-disclosure">
+      We may earn a commission if you book through this link, at no extra cost to you.
+    </p>
+  )}
+</div>
+
+<style>
+  .check-availability {
+    margin-top: 1rem;
+  }
+
+  .availability-btn {
+    display: inline-block;
+  }
+
+  .ftc-disclosure {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 0.5rem;
+    line-height: 1.4;
+  }
+</style>
