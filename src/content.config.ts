@@ -35,6 +35,7 @@ const properties = defineCollection({
     amenities: z.array(z.string()),
     roomTypes: z.string().optional(),
     phone: z.string().optional(),
+    distance: z.string().optional(),
     website: z.string().optional(),
     affiliateUrl: z.string().optional(),
     description: z.string(),

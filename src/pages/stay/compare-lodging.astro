@@ -1,0 +1,401 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const properties = await getCollection('properties');
+
+// Filter option lists generated from the data itself, same pattern as outfitters.
+const regions = [...new Set(properties.map((p) => p.data.region))].sort();
+const amenitiesList = [...new Set(properties.flatMap((p) => p.data.amenities))].sort();
+const propertyTypes = [...new Set(properties.map((p) => p.data.propertyType))].sort();
+const priceTiers = [...new Set(properties.map((p) => p.data.priceTier))].sort();
+
+const sortedProperties = [...properties].sort((a, b) => a.data.name.localeCompare(b.data.name));
+---
+<Layout title="Compare Lodging">
+  <main class="compare-page">
+    <p class="eyebrow">Missoula &amp; Western Montana</p>
+    <h1>Compare Lodging</h1>
+    <p class="intro">Filter by region, amenities, property type, or price to find the right place to stay.</p>
+
+    <div class="layout-grid">
+      <button type="button" id="filter-toggle" class="filter-toggle">☰ Filters</button>
+      <aside class="filters" aria-label="Filter lodging">
+        <div class="filter-group">
+          <h2>Region</h2>
+          {regions.map((r) => (
+            <label class="filter-option">
+              <input type="checkbox" data-group="region" data-value={r} />
+              {r}
+            </label>
+          ))}
+        </div>
+
+        <div class="filter-group">
+          <h2>Amenities</h2>
+          {amenitiesList.map((a) => (
+            <label class="filter-option">
+              <input type="checkbox" data-group="amenities" data-value={a} />
+              {a}
+            </label>
+          ))}
+        </div>
+
+        <div class="filter-group">
+          <h2>Property Type</h2>
+          {propertyTypes.map((t) => (
+            <label class="filter-option">
+              <input type="checkbox" data-group="propertyType" data-value={t} />
+              {t}
+            </label>
+          ))}
+        </div>
+
+        <div class="filter-group">
+          <h2>Price</h2>
+          {priceTiers.map((p) => (
+            <label class="filter-option">
+              <input type="checkbox" data-group="priceTier" data-value={p} />
+              {p}
+            </label>
+          ))}
+        </div>
+
+        <button type="button" id="reset-filters" class="reset-btn">Reset filters</button>
+      </aside>
+
+      <div class="grid-col">
+        <p id="result-count" class="result-count"></p>
+
+        <div class="card-grid" id="card-grid">
+          {sortedProperties.map((entry) => (
+            <div
+              class="card"
+              data-region={entry.data.region}
+              data-amenities={entry.data.amenities.join('|')}
+              data-propertytype={entry.data.propertyType}
+              data-pricetier={entry.data.priceTier}
+            >
+              <div class="card-photo">
+                <img src="/fish-placeholder.png" alt="" class="card-icon" />
+              </div>
+              <div class="card-body">
+                <p class="card-eyebrow">{entry.data.town}, {entry.data.region}</p>
+                <h3>{entry.data.name}</h3>
+                <p class="card-price">{entry.data.priceDisplay}</p>
+                <div class="card-pills">
+                  {entry.data.amenities.slice(0, 2).map((a) => <span class="pill">{a}</span>)}
+                </div>
+                {entry.data.website ? (
+                  <a href={entry.data.website} class="visit-btn" target="_blank" rel="noopener">Visit Website &rarr;</a>
+                ) : (
+                  <p class="no-website">Website not yet listed</p>
+                )}
+                <a href={`/stay/${entry.id}/`} class="detail-link">Property details &rarr;</a>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <p id="no-results" class="no-results" hidden>No properties match those filters. Try removing one.</p>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  const grid = document.getElementById('card-grid') as HTMLElement;
+  const cards = Array.from(grid.querySelectorAll<HTMLElement>('.card'));
+  const checkboxes = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'));
+  const resultCount = document.getElementById('result-count') as HTMLElement;
+  const noResults = document.getElementById('no-results') as HTMLElement;
+  const resetBtn = document.getElementById('reset-filters') as HTMLButtonElement;
+  const filterToggle = document.getElementById('filter-toggle') as HTMLButtonElement;
+  const filtersPanel = document.querySelector('.filters') as HTMLElement;
+
+  filterToggle.addEventListener('click', () => {
+    filtersPanel.classList.toggle('open');
+  });
+
+  function getCheckedByGroup(): Record<string, string[]> {
+    const byGroup: Record<string, string[]> = {};
+    checkboxes.forEach((cb) => {
+      if (cb.checked) {
+        const group = cb.dataset.group as string;
+        if (!byGroup[group]) byGroup[group] = [];
+        byGroup[group].push(cb.dataset.value as string);
+      }
+    });
+    return byGroup;
+  }
+
+  function cardMatches(card: HTMLElement, byGroup: Record<string, string[]>): boolean {
+    return Object.entries(byGroup).every(([group, values]) => {
+      const cardValues: string[] =
+        group === 'amenities'
+          ? (card.dataset.amenities || '').split('|')
+          : group === 'propertyType'
+          ? [card.dataset.propertytype || '']
+          : group === 'region'
+          ? [card.dataset.region || '']
+          : [card.dataset.pricetier || ''];
+      return values.some((v: string) => cardValues.includes(v));
+    });
+  }
+
+  function applyFilters(): void {
+    const byGroup = getCheckedByGroup();
+    let visibleCount = 0;
+
+    cards.forEach((card) => {
+      const matches = Object.keys(byGroup).length === 0 || cardMatches(card, byGroup);
+      card.style.display = matches ? '' : 'none';
+      if (matches) visibleCount++;
+    });
+
+    resultCount.textContent = `Showing ${visibleCount} of ${cards.length} properties`;
+    noResults.hidden = visibleCount !== 0;
+  }
+
+  checkboxes.forEach((cb) => cb.addEventListener('change', applyFilters));
+
+  resetBtn.addEventListener('click', () => {
+    checkboxes.forEach((cb) => (cb.checked = false));
+    applyFilters();
+  });
+
+  applyFilters();
+</script>
+
+<style>
+  .compare-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #4a6670;
+    font-weight: 600;
+    margin: 0 0 0.25rem 0;
+  }
+
+  h1 {
+    margin: 0 0 0.5rem 0;
+  }
+
+  .intro {
+    margin: 0 0 2rem 0;
+    color: #4a4438;
+  }
+
+  .layout-grid {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+ .filters {
+    position: sticky;
+    top: 1.5rem;
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    padding-right: 0.5rem;
+  }
+
+  .filter-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .filter-group h2 {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6b6558;
+    font-weight: 600;
+    margin: 0 0 0.6rem 0;
+  }
+
+  .filter-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+    cursor: pointer;
+  }
+
+  .reset-btn {
+    background: none;
+    border: 1px solid #4a6670;
+    color: #4a6670;
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .reset-btn:hover {
+    background: #4a6670;
+    color: #faf8f4;
+  }
+
+  .result-count {
+    font-size: 0.9rem;
+    color: #6b6558;
+    margin: 0 0 1rem 0;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .card {
+    display: block;
+    background: #fff;
+    border: 1px solid #e5e1d6;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .card-photo {
+    aspect-ratio: 16 / 9;
+    background: #e8e4da;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-icon {
+    width: 25%;
+    max-width: 70px;
+    opacity: 0.85;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .card-eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #4a6670;
+    font-weight: 600;
+    margin: 0 0 0.2rem 0;
+  }
+
+  .card-body h3 {
+    margin: 0 0 0.3rem 0;
+    font-size: 1.1rem;
+  }
+
+  .card-price {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    margin: 0 0 0.6rem 0;
+  }
+
+  .card-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .pill {
+    background: #eef2f0;
+    color: #4a6670;
+    border: 1px solid #cdd9d6;
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .visit-btn {
+    display: block;
+    text-align: center;
+    background: #2f4538;
+    color: #faf8f4;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+  }
+
+  .visit-btn:hover {
+    background: #24352b;
+  }
+
+  .no-website {
+    color: #a08c6a;
+    font-style: italic;
+    font-size: 0.85rem;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .detail-link {
+    display: block;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #6b6558;
+    text-decoration: none;
+  }
+
+  .detail-link:hover {
+    text-decoration: underline;
+  }
+
+  .no-results {
+    color: #6b6558;
+    font-style: italic;
+  }
+
+  .filter-toggle {
+    display: none;
+  }
+
+  @media (max-width: 700px) {
+    .layout-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .filter-toggle {
+      display: block;
+      width: 100%;
+      margin-bottom: 1rem;
+      padding: 0.6rem;
+      background: #2f4538;
+      color: #faf8f4;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .filters {
+      position: static;
+      display: none;
+    }
+
+    .filters.open {
+      display: block;
+      margin-bottom: 1.5rem;
+    }
+  }
+</style>

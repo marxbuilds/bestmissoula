@@ -1,0 +1,117 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const properties = await getCollection('properties');
+  return properties.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const {
+  name, town, region, propertyType,
+  priceTier, priceDisplay, amenities, roomTypes,
+  phone, website, affiliateUrl, distance, description
+} = entry.data;
+---
+<Layout title={name}>
+  <main class="property-page">
+    <p class="eyebrow">{town}, {region}</p>
+    <h1>{name}</h1>
+
+    <div class="content-grid">
+      <div class="photo-placeholder">
+        <span class="placeholder-text">Photo coming soon</span>
+      </div>
+
+      <div class="main-col">
+        <p class="description">{description}</p>
+
+        <div class="tag-group">
+          <span class="tag-label">Property Type</span>
+          <p class="plain-value">{propertyType}</p>
+        </div>
+
+        <div class="tag-group">
+          <span class="tag-label">Amenities</span>
+          <div class="pills">
+            {amenities.map((a) => <span class="pill">{a}</span>)}
+          </div>
+        </div>
+
+        <div class="tag-group">
+          <span class="tag-label">Room Types</span>
+          <p class="plain-value">{roomTypes}</p>
+        </div>
+
+        <div class="tag-group">
+          <span class="tag-label">Distance from Missoula</span>
+          <p class="plain-value">{distance}</p>
+        </div>
+      </div>
+
+      <aside class="contact-box">
+        <p class="price">{priceDisplay} <span class="price-tier">({priceTier})</span></p>
+        <p class="phone"><a href={"tel:" + phone}>{phone}</a></p>
+        <p class="website"><a href={website} target="_blank" rel="noopener">Visit website</a></p>
+      </aside>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .property-page { max-width: 900px; margin: 0 auto; padding: 2rem; }
+  .eyebrow {
+    font-family: 'Inter', sans-serif; font-size: 0.85rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #4a6670; font-weight: 600; margin: 0 0 0.25rem 0;
+  }
+  h1 { margin: 0 0 1.5rem 0; font-size: 2.25rem; }
+  .content-grid {
+    display: grid; grid-template-columns: 2fr 1fr;
+    }
+  .photo-placeholder {
+    grid-area: photo; width: 100%; aspect-ratio: 16 / 9; background: #e8e4da;
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  }
+  .placeholder-text {
+    font-family: 'Inter', sans-serif; font-size: 0.9rem; color: #8a8172;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .main-col { grid-area: maincol; }
+  .description { font-size: 1.05rem; line-height: 1.6; margin-bottom: 1.5rem; }
+  .tag-group { margin-bottom: 1.25rem; }
+  .tag-label {
+    display: block; font-family: 'Inter', sans-serif; font-size: 0.8rem;
+    text-transform: uppercase; letter-spacing: 0.06em; color: #6b6558;
+    font-weight: 600; margin-bottom: 0.4rem;
+  }
+  .plain-value { margin: 0; }
+  .pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .pill {
+    background: #eef2f0; color: #4a6670; border: 1px solid #cdd9d6;
+    border-radius: 999px; padding: 0.3rem 0.8rem; font-size: 0.85rem; font-weight: 500;
+  }
+  .contact-box {
+    grid-area: contact; background: #2f4538; color: #faf8f4; border-radius: 8px;
+    padding: 1.5rem; position: sticky; top: 1.5rem;
+  }
+  .contact-box p { margin: 0 0 1rem 0; }
+  .contact-box p:last-child { margin-bottom: 0; }
+  .price { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 700; }
+  .price-tier { font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 400; opacity: 0.8; }
+  .contact-box a {
+    color: #faf8f4; font-weight: 600; text-decoration: none;
+    border-bottom: 1px solid rgba(250, 248, 244, 0.5);
+  }
+  .contact-box a:hover { border-bottom-color: #faf8f4; }
+  @media (max-width: 700px) {
+    .content-grid {
+      grid-template-columns: 1fr;
+      grid-template-areas: "photo" "contact" "maincol";
+    }
+    .contact-box { position: static; }
+  }
+</style>
